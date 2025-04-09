@@ -1,0 +1,6 @@
+LOG_LEVEL=debug
+
+# REST API configuration
+PORT=:8080
+WRITE_TIMEOUT=15s
+SERVER_NAME=localhost

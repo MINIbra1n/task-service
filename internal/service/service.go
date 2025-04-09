@@ -8,15 +8,18 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"go.uber.org/zap"
 )
 
 type service struct {
-	repo Storage
+	repo   Storage
+	logger *zap.SugaredLogger
 }
 
-func NewService(repo Storage) *service {
+func NewService(repo Storage, logger *zap.SugaredLogger) *service {
 	return &service{
-		repo: repo,
+		repo:   repo,
+		logger: logger,
 	}
 }
 func (s *service) GetStorageUser() *map[string]string {
@@ -34,7 +37,7 @@ func (s *service) GetStorageUser() *map[string]string {
 func (s *service) CreateTask(ctx *fiber.Ctx) error {
 	var task repo.Task
 	if err := json.Unmarshal(ctx.Body(), &task); err != nil {
-		//loger
+		s.logger.Error("Invalid request body", zap.Error(err))
 		return dto.BadResponseError(ctx, dto.FieldBadFormat, "Invalid request body")
 	}
 	t := time.Now()
@@ -45,7 +48,7 @@ func (s *service) CreateTask(ctx *fiber.Ctx) error {
 		if errors.Is(&repo.FailedInsert{}, err) {
 			dto.BadResponseError(ctx, dto.FieldBadFormat, "Invalid request body")
 		}
-		// s.log.Error("Failed to insert task", zap.Error(err))
+		s.logger.Error("Failed to insert task", zap.Error(err))
 		return dto.InternalServerError(ctx)
 	}
 	response := dto.Response{
@@ -60,9 +63,9 @@ func (s *service) GetTasks(ctx *fiber.Ctx) error {
 	tasks, err := s.repo.GetTasks(ctx.Context())
 	if err != nil {
 		if errors.Is(&repo.EmtyStorage{}, err) {
-			dto.BadResponseError(ctx, string(fiber.StatusNotFound), "Empty storage")
+			return dto.BadResponseError(ctx, string(fiber.StatusNotFound), "Empty storage")
 		}
-		//loger
+		s.logger.Error("Failed to insert task", zap.Error(err))
 		return dto.InternalServerError(ctx)
 	}
 	response := dto.Response{
@@ -77,10 +80,13 @@ func (s *service) GetTaskID(c *fiber.Ctx) error {
 	id := c.Params("id")
 	task, err := s.repo.GetTaskID(c.Context(), id)
 	if err != nil {
-		if errors.Is(&repo.NoSuchTaskStorage{}, err) {
-			dto.BadResponseError(c, string(fiber.StatusNotFound), "Not Found")
+		if errors.Is(&repo.EmtyStorage{}, err) {
+			return dto.BadResponseError(c, string(fiber.StatusNotFound), err.Error())
+		} else if errors.Is(&repo.NoSuchTaskStorage{}, err) {
+			return dto.BadResponseError(c, string(fiber.StatusNotFound), err.Error())
+
 		}
-		//loger
+		s.logger.Error("Failed to selects task", zap.Error(err))
 		return dto.InternalServerError(c)
 	}
 	response := dto.Response{
@@ -100,7 +106,15 @@ func (s *service) UpdateTaskID(c *fiber.Ctx) error {
 	}
 	taskId, err := s.repo.UpdateTaskID(c.Context(), id, taskUp)
 	if err != nil {
-		//loger
+		if errors.Is(&repo.EmtyStorage{}, err) {
+
+			return dto.BadResponseError(c, string(fiber.StatusNotFound), err.Error())
+
+		} else if errors.Is(&repo.FailedToUpdate{}, err) {
+			return dto.BadResponseError(c, string(fiber.StatusNotFound), err.Error())
+
+		}
+		s.logger.Error("Failed to update task", zap.Error(err))
 		return dto.InternalServerError(c)
 	}
 	response := dto.Response{
@@ -112,14 +126,22 @@ func (s *service) UpdateTaskID(c *fiber.Ctx) error {
 }
 
 func (s *service) DeleteTaskID(c *fiber.Ctx) error {
+
 	id := c.Params("id")
 	taskId, err := s.repo.DeleteTaskID(c.Context(), id)
 	if err != nil {
-		//loger
+		if errors.Is(&repo.EmtyStorage{}, err) {
+			return dto.BadResponseError(c, string(fiber.StatusNotFound), err.Error())
+
+		} else if errors.Is(&repo.NothingToDeleteById{}, err) {
+			return dto.BadResponseError(c, string(fiber.StatusNotFound), err.Error())
+
+		}
+		s.logger.Error("Failed to delete task", zap.Error(err))
 		return dto.InternalServerError(c)
 	}
 	response := dto.Response{
-		Status: "update",
+		Status: "delete",
 		Data:   map[string]string{"task_id": taskId},
 	}
 

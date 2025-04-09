@@ -4,7 +4,10 @@ go 1.22.2
 
 require (
 	github.com/gofiber/fiber/v2 v2.52.6
+	github.com/joho/godotenv v1.5.1
+	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/pkg/errors v0.9.1
+	go.uber.org/zap v1.27.0
 )
 
 require (
@@ -18,5 +21,6 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.51.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
+	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 )
