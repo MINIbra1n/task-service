@@ -4,8 +4,6 @@ import (
 	"context"
 	"sync"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 var status = [3]string{"new", "in_progress", "done"}
@@ -55,9 +53,9 @@ func (r *storage) CreateTask(ctx context.Context, task *Task) (string, error) {
 
 			return task.ID, nil
 		}
-		return "", errors.New("failed to insert task")
+		return "", &FailedInsert{}
 	}
-	return "", errors.New("failed to insert task")
+	return "", &FailedInsert{}
 
 }
 
@@ -66,7 +64,7 @@ func (r *storage) GetTasks(ctx context.Context) (*[]Task, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if len(r.Tasks) == 0 {
-		return nil, errors.New("empty storage")
+		return nil, &EmtyStorage{}
 	}
 	for k, v := range r.Tasks {
 		res = append(res, Task{
@@ -85,7 +83,7 @@ func (r *storage) GetTaskID(ctx context.Context, id string) (*Task, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if len(r.Tasks) == 0 {
-		return nil, errors.New("empty storage")
+		return nil, &EmtyStorage{}
 	}
 	if value, ok := r.Tasks[id]; ok {
 		return &Task{
@@ -97,33 +95,33 @@ func (r *storage) GetTaskID(ctx context.Context, id string) (*Task, error) {
 			Updated_at:  value.Updated_at,
 		}, nil
 	} else {
-		return nil, errors.New("no such user in storage")
+		return nil, &NoSuchTaskStorage{}
 	}
 }
 func (r *storage) UpdateTaskID(ctx context.Context, id string, task *TaskUpdate) (string, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if len(r.Tasks) == 0 {
-		return "", errors.New("empty storage")
+		return "", &EmtyStorage{}
 	}
 	if task.Status == status[0] || task.Status == status[1] || task.Status == status[2] {
 		if _, ok := r.Tasks[id]; ok {
 			r.Tasks[id] = tasks{Title: task.Title, Description: task.Description, Status: task.Status, Updated_at: task.Updated_at}
 			return id, nil
 		}
-		return "", errors.New("failed to update task")
+		return "", &FailedToUpdate{}
 	}
-	return "", errors.New("failed to update task")
+	return "", &FailedToUpdate{}
 }
 func (r *storage) DeleteTaskID(ctx context.Context, id string) (string, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if len(r.Tasks) == 0 {
-		return "", errors.New("empty storage")
+		return "", &EmtyStorage{}
 	}
 	if _, ok := r.Tasks[id]; ok {
 		delete(r.Tasks, id)
 		return id, nil
 	}
-	return "", errors.New("nothing to delete by: " + id)
+	return "", &NothingToDeleteById{}
 }

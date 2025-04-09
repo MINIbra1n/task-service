@@ -2,7 +2,8 @@ package service
 
 import (
 	"encoding/json"
-	"task-service/internal/api/dto"
+	"errors"
+	"task-service/internal/dto"
 	"task-service/internal/repo"
 	"time"
 
@@ -41,6 +42,9 @@ func (s *service) CreateTask(ctx *fiber.Ctx) error {
 	task.Updated_at = t
 	taskID, err := s.repo.CreateTask(ctx.Context(), &task)
 	if err != nil {
+		if errors.Is(&repo.FailedInsert{}, err) {
+			dto.BadResponseError(ctx, dto.FieldBadFormat, "Invalid request body")
+		}
 		// s.log.Error("Failed to insert task", zap.Error(err))
 		return dto.InternalServerError(ctx)
 	}
@@ -55,6 +59,9 @@ func (s *service) GetTasks(ctx *fiber.Ctx) error {
 
 	tasks, err := s.repo.GetTasks(ctx.Context())
 	if err != nil {
+		if errors.Is(&repo.EmtyStorage{}, err) {
+			dto.BadResponseError(ctx, string(fiber.StatusNotFound), "Empty storage")
+		}
 		//loger
 		return dto.InternalServerError(ctx)
 	}
@@ -70,6 +77,9 @@ func (s *service) GetTaskID(c *fiber.Ctx) error {
 	id := c.Params("id")
 	task, err := s.repo.GetTaskID(c.Context(), id)
 	if err != nil {
+		if errors.Is(&repo.NoSuchTaskStorage{}, err) {
+			dto.BadResponseError(c, string(fiber.StatusNotFound), "Not Found")
+		}
 		//loger
 		return dto.InternalServerError(c)
 	}
@@ -109,7 +119,7 @@ func (s *service) DeleteTaskID(c *fiber.Ctx) error {
 		return dto.InternalServerError(c)
 	}
 	response := dto.Response{
-		Status: "delete",
+		Status: "update",
 		Data:   map[string]string{"task_id": taskId},
 	}
 

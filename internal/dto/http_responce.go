@@ -11,6 +11,7 @@ const (
 	FieldIncorrect     = "FIELD_INCORRECT"
 	ServiceUnavailable = "SERVICE_UNAVAILABLE"
 	InternalError      = "Service is currently unavailable. Please try again later."
+	BadRequest         = "Bad_Request"
 )
 
 type Response struct {

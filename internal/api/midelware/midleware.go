@@ -2,11 +2,12 @@ package midelware
 
 import (
 	"strings"
-	"task-service/internal/api/dto"
+	"task-service/internal/dto"
 
 	"github.com/gofiber/fiber/v2"
 )
 
+// key=Auth Value=admin;admin Add to Headers
 func Auntification(users map[string]string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		d := c.GetReqHeaders()
