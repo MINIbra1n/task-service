@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"task-service/internal/api/repo"
+	"task-service/internal/repo"
 
 	"github.com/gofiber/fiber/v2"
 )

@@ -3,7 +3,7 @@ package service
 import (
 	"encoding/json"
 	"task-service/internal/api/dto"
-	"task-service/internal/api/repo"
+	"task-service/internal/repo"
 	"time"
 
 	"github.com/gofiber/fiber/v2"

@@ -4,8 +4,8 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"task-service/internal/api/repo"
 	"task-service/internal/api/router"
+	"task-service/internal/repo"
 	"task-service/internal/service"
 )
 
