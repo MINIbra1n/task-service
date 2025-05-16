@@ -1,7 +1,6 @@
 package router
 
 import (
-	"task-service/internal/api/midelware"
 	"task-service/internal/service"
 
 	"github.com/gofiber/fiber/v2"
@@ -14,10 +13,10 @@ type Router struct {
 	Service service.Service
 }
 
-func NewRouter(rout *Router, users map[string]string) *fiber.App {
+func NewRouter(rout *Router) *fiber.App {
 	r := fiber.New(fiber.Config{})
 
-	rGroupV1 := r.Group("/v1", midelware.Auntification(users))
+	rGroupV1 := r.Group("/v1")
 	//  Handler
 	rGroupV1.Post("/task", rout.Service.CreateTask)
 	rGroupV1.Get("/tasks", rout.Service.GetTasks)

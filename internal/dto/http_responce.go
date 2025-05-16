@@ -7,11 +7,11 @@ import (
 // DTO  некоторых компаниях используется такой подход
 
 const (
-	FieldBadFormat     = "FIELD_BADFORMAT"
-	FieldIncorrect     = "FIELD_INCORRECT"
-	ServiceUnavailable = "SERVICE_UNAVAILABLE"
-	InternalError      = "Service is currently unavailable. Please try again later."
-	BadRequest         = "Bad_Request"
+	FieldBadFormat = "FIELD_BADFORMAT"
+	FieldIncorrect = "FIELD_INCORRECT"
+	// ServiceUnavailable = "SERVICE_UNAVAILABLE"
+	InternalError = "Service is currently unavailable. Please try again later."
+	BadRequest    = "Bad_Request"
 )
 
 type Response struct {
@@ -21,11 +21,11 @@ type Response struct {
 }
 
 type Error struct {
-	Code string `json:"code"`
+	Code int    `json:"code"`
 	Desc string `json:"desc"`
 }
 
-func BadResponseError(ctx *fiber.Ctx, code, desc string) error {
+func BadResponseError(ctx *fiber.Ctx, code int, desc string) error {
 	return ctx.Status(fiber.StatusBadRequest).JSON(Response{
 		Status: "error",
 		Error: &Error{
@@ -39,7 +39,7 @@ func InternalServerError(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusInternalServerError).JSON(Response{
 		Status: "error",
 		Error: &Error{
-			Code: ServiceUnavailable,
+			Code: 0,
 			Desc: InternalError,
 		},
 	})

@@ -13,14 +13,12 @@ type Service interface {
 	GetTaskID(ctx *fiber.Ctx) error
 	UpdateTaskID(ctx *fiber.Ctx) error
 	DeleteTaskID(ctx *fiber.Ctx) error
-	GetStorageUser() *map[string]string
 }
 
 type Storage interface {
-	GetUsers() *map[string]string
 	GetTasks(ctx context.Context) (*[]repo.Task, error)
-	CreateTask(ctx context.Context, task *repo.Task) (string, error)
-	GetTaskID(ctx context.Context, id string) (*repo.Task, error)
-	UpdateTaskID(ctx context.Context, id string, task *repo.TaskUpdate) (string, error)
-	DeleteTaskID(ctx context.Context, id string) (string, error)
+	CreateTask(ctx context.Context, task repo.Task) (int64, error)
+	GetTaskID(ctx context.Context, id int64) (*repo.Task, error)
+	UpdateTaskID(ctx context.Context, id int64, task *repo.TaskUpdate) (int64, error)
+	DeleteTaskID(ctx context.Context, id int64) (int64, error)
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 	"os/signal"
@@ -33,10 +34,10 @@ func main() {
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "No log level"))
 	}
-
-	repositories := repo.NewRepositories()
+	ctx := context.Background()
+	repositories, err := repo.NewRepository(ctx, cfg.PostgreSQL)
 	service := service.NewService(repositories, loger)
-	app := router.NewRouter(&router.Router{Service: service}, *service.GetStorageUser())
+	app := router.NewRouter(&router.Router{Service: service})
 	go func() {
 		log.Fatal(app.Listen(cfg.Rest.ServerName + cfg.Rest.ListenAddress))
 	}()

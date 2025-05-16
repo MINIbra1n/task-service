@@ -23,7 +23,7 @@ func Auntification(users map[string]string) fiber.Handler {
 			}
 
 		}
-		return dto.BadResponseError(c, string(fiber.StatusForbidden), "Доступ запрещен")
+		return dto.BadResponseError(c, (fiber.StatusForbidden), "Доступ запрещен")
 	}
 
 }

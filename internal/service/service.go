@@ -3,8 +3,10 @@ package service
 import (
 	"encoding/json"
 	"errors"
+	"strconv"
 	"task-service/internal/dto"
 	"task-service/internal/repo"
+	"task-service/pkg/validator"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -22,9 +24,10 @@ func NewService(repo Storage, logger *zap.SugaredLogger) *service {
 		logger: logger,
 	}
 }
-func (s *service) GetStorageUser() *map[string]string {
-	return s.repo.GetUsers()
-}
+
+// func (s *service) GetStorageUser() *map[string]string {
+// 	return s.repo.GetUsers()
+// }
 
 // Пример запроса:
 //
@@ -36,24 +39,32 @@ func (s *service) GetStorageUser() *map[string]string {
 //	}
 func (s *service) CreateTask(ctx *fiber.Ctx) error {
 	var task repo.Task
+
 	if err := json.Unmarshal(ctx.Body(), &task); err != nil {
 		s.logger.Error("Invalid request body", zap.Error(err))
-		return dto.BadResponseError(ctx, dto.FieldBadFormat, "Invalid request body")
+		return dto.BadResponseError(ctx, 0, "Invalid request body")
+	}
+
+	if err := validator.ValidatorTask(task); err != nil {
+		s.logger.Error("Invalid request body", zap.Error(err))
+		return dto.BadResponseError(ctx, 0, "Invalid request body")
 	}
 	t := time.Now()
 	task.Created_at = t
 	task.Updated_at = t
-	taskID, err := s.repo.CreateTask(ctx.Context(), &task)
+	taskID, err := s.repo.CreateTask(ctx.Context(), task)
 	if err != nil {
 		if errors.Is(&repo.FailedInsert{}, err) {
-			dto.BadResponseError(ctx, dto.FieldBadFormat, "Invalid request body")
+
+			return dto.BadResponseError(ctx, 400, "Invalid request body")
 		}
 		s.logger.Error("Failed to insert task", zap.Error(err))
 		return dto.InternalServerError(ctx)
 	}
+	ID := strconv.Itoa(int(taskID))
 	response := dto.Response{
 		Status: "success",
-		Data:   map[string]string{"task_id": taskID},
+		Data:   map[string]string{"task_id": (ID)},
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(response)
@@ -63,9 +74,13 @@ func (s *service) GetTasks(ctx *fiber.Ctx) error {
 	tasks, err := s.repo.GetTasks(ctx.Context())
 	if err != nil {
 		if errors.Is(&repo.EmtyStorage{}, err) {
-			return dto.BadResponseError(ctx, string(fiber.StatusNotFound), "Empty storage")
+			return ctx.Status(fiber.StatusNotFound).JSON(dto.Error{
+				Code: fiber.StatusNotFound,
+				Desc: "Empty storage",
+			})
+
 		}
-		s.logger.Error("Failed to insert task", zap.Error(err))
+		s.logger.Error("Failed to get task", zap.Error(err))
 		return dto.InternalServerError(ctx)
 	}
 	response := dto.Response{
@@ -78,12 +93,19 @@ func (s *service) GetTasks(ctx *fiber.Ctx) error {
 
 func (s *service) GetTaskID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	task, err := s.repo.GetTaskID(c.Context(), id)
+	intID, err := strconv.Atoi(id)
+	if err != nil {
+		return err
+	}
+	task, err := s.repo.GetTaskID(c.Context(), int64(intID))
 	if err != nil {
 		if errors.Is(&repo.EmtyStorage{}, err) {
-			return dto.BadResponseError(c, string(fiber.StatusNotFound), err.Error())
+			return c.Status(fiber.StatusNotFound).JSON(dto.Error{
+				Code: fiber.StatusNotFound,
+				Desc: "Empty storage",
+			})
 		} else if errors.Is(&repo.NoSuchTaskStorage{}, err) {
-			return dto.BadResponseError(c, string(fiber.StatusNotFound), err.Error())
+			return dto.BadResponseError(c, (fiber.StatusNotFound), err.Error())
 
 		}
 		s.logger.Error("Failed to selects task", zap.Error(err))
@@ -102,24 +124,29 @@ func (s *service) UpdateTaskID(c *fiber.Ctx) error {
 	id := c.Params("id")
 	if err := json.Unmarshal(c.Body(), &taskUp); err != nil {
 		//loger
-		return dto.BadResponseError(c, dto.FieldBadFormat, "Invalid request body")
+		return dto.BadResponseError(c, 0, "Invalid request body")
 	}
-	taskId, err := s.repo.UpdateTaskID(c.Context(), id, taskUp)
+	intID, err := strconv.Atoi(id)
+	if err != nil {
+		return err
+	}
+	taskId, err := s.repo.UpdateTaskID(c.Context(), int64(intID), taskUp)
 	if err != nil {
 		if errors.Is(&repo.EmtyStorage{}, err) {
 
-			return dto.BadResponseError(c, string(fiber.StatusNotFound), err.Error())
+			return dto.BadResponseError(c, (fiber.StatusNotFound), err.Error())
 
 		} else if errors.Is(&repo.FailedToUpdate{}, err) {
-			return dto.BadResponseError(c, string(fiber.StatusNotFound), err.Error())
+			return dto.BadResponseError(c, (fiber.StatusNotFound), err.Error())
 
 		}
 		s.logger.Error("Failed to update task", zap.Error(err))
 		return dto.InternalServerError(c)
 	}
+	id = strconv.Itoa(int(taskId))
 	response := dto.Response{
 		Status: "update",
-		Data:   map[string]string{"task_id": taskId},
+		Data:   map[string]string{"task_id": (id)},
 	}
 
 	return c.Status(fiber.StatusOK).JSON(response)
@@ -128,21 +155,26 @@ func (s *service) UpdateTaskID(c *fiber.Ctx) error {
 func (s *service) DeleteTaskID(c *fiber.Ctx) error {
 
 	id := c.Params("id")
-	taskId, err := s.repo.DeleteTaskID(c.Context(), id)
+	intID, err := strconv.Atoi(id)
+	if err != nil {
+		return err
+	}
+	taskId, err := s.repo.DeleteTaskID(c.Context(), int64(intID))
 	if err != nil {
 		if errors.Is(&repo.EmtyStorage{}, err) {
-			return dto.BadResponseError(c, string(fiber.StatusNotFound), err.Error())
+			return dto.BadResponseError(c, (fiber.StatusNotFound), err.Error())
 
 		} else if errors.Is(&repo.NothingToDeleteById{}, err) {
-			return dto.BadResponseError(c, string(fiber.StatusNotFound), err.Error())
+			return dto.BadResponseError(c, (fiber.StatusNotFound), err.Error())
 
 		}
 		s.logger.Error("Failed to delete task", zap.Error(err))
 		return dto.InternalServerError(c)
 	}
+	idtask := strconv.Itoa(int(taskId))
 	response := dto.Response{
 		Status: "delete",
-		Data:   map[string]string{"task_id": taskId},
+		Data:   map[string]string{"task_id": (idtask)},
 	}
 
 	return c.Status(fiber.StatusOK).JSON(response)
